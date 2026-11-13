@@ -476,6 +476,10 @@ function buildMode:Init(dbFileName, buildName, buildXML, convertBuild, importLin
 		self.viewMode = "COMPARE"
 	end)
 	self.controls.modeCompare.locked = function() return self.viewMode == "COMPARE" end
+	self.controls.modeAtlas = new("ButtonControl"):ButtonControl({"LEFT",self.controls.modeCompare,"RIGHT"}, {4, 0, 72, 20}, "Atlas", function()
+		self.viewMode = "ATLAS"
+	end)
+	self.controls.modeAtlas.locked = function() return self.viewMode == "ATLAS" end
 	-- Skills
 	self.controls.mainSkillLabel = new("LabelControl"):LabelControl({"TOPLEFT",self.anchorSideBar,"TOPLEFT"}, {0, 80, 300, 16}, "^7Main Skill:")
 	self.controls.mainSocketGroup = new("DropDownControl"):DropDownControl({"TOPLEFT",self.controls.mainSkillLabel,"BOTTOMLEFT"}, {0, 2, 300, 18}, nil, function(index, value)
@@ -622,6 +626,7 @@ function buildMode:Init(dbFileName, buildName, buildXML, convertBuild, importLin
 	-- ensure that we don't refer to outdated calc tab sections
 	self.breakdownIndex = nil
 	self.compareTab = new("CompareTab"):CompareTab(self)
+	self.atlasTab = new("AtlasTab"):AtlasTab(self)
 	-- Used for pined calcs panes
 	self.overlayPanes = { }
 
@@ -1315,6 +1320,8 @@ function buildMode:OnFrame(inputEvents)
 		self.calcsTab:Draw(tabViewPort, inputEvents)
 	elseif self.viewMode == "COMPARE" then
 		self.compareTab:Draw(tabViewPort, inputEvents)
+	elseif self.viewMode == "ATLAS" then
+		self.atlasTab:Draw(tabViewPort, inputEvents)
 	end
 
 	-- Draw overlay panes on top of all tab content (last = topmost)

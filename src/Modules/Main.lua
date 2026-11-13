@@ -362,6 +362,17 @@ function main:LoadTree(treeVersion)
 	return nil
 end
 
+---Load the atlas passive tree once and keep it (pob-atlas fork)
+---@param treeVersion string
+---@return AtlasTree
+function main:LoadAtlasTree(treeVersion)
+	self.atlasTree = self.atlasTree or { }
+	if not self.atlasTree[treeVersion] then
+		self.atlasTree[treeVersion] = new("AtlasTree"):AtlasTree(treeVersion)
+	end
+	return self.atlasTree[treeVersion]
+end
+
 function main:CanExit()
 	local ret = self:CallMode("CanExit", "EXIT")
 	if ret ~= nil then
