@@ -48,7 +48,7 @@ function AtlasSpecClass:BuildPaths()
 		head = head + 1
 		for _, linkId in ipairs(node.linkedId) do
 			local other = nodes[linkId]
-			if isPathable(other) and dist[linkId] == nil then
+			if isPathable(other) and dist[linkId] == nil and not (self.blockedNodes and self.blockedNodes[linkId]) then
 				dist[linkId] = dist[node.id] + 1
 				prev[linkId] = node.id
 				t_insert(queue, other)
@@ -284,8 +284,13 @@ end
 -- Allocate every node in `nodes`, nearest first: each round takes the unallocated target with
 -- the shortest path from the current tree, allocates that path, and measures again, so later
 -- targets can route through nodes taken for earlier ones.
+-- `blocked` (optional, id set): nodes the paths must not pass through.
 -- Returns the points added and the number of targets that have no path.
-function AtlasSpecClass:FillNodes(nodes)
+function AtlasSpecClass:FillNodes(nodes, blocked)
+	if blocked and next(blocked) then
+		self.blockedNodes = blocked
+		self:BuildPaths()
+	end
 	local pending = { }
 	for _, node in ipairs(nodes) do
 		if not self.allocNodes[node.id] then
@@ -311,6 +316,10 @@ function AtlasSpecClass:FillNodes(nodes)
 		self:AllocNode(best)
 		pending[best.id] = nil
 	end
+	if self.blockedNodes then
+		self.blockedNodes = nil
+		self:BuildPaths()
+	end
 	local unreachable = 0
 	for id in pairs(pending) do
 		if not self.allocNodes[id] then
@@ -318,4 +327,51 @@ function AtlasSpecClass:FillNodes(nodes)
 		end
 	end
 	return self:CountAllocNodes() - before, unreachable
+end
+
+-- Remove every node in `nodes` with the nodes that hang off it, as removing it on the tree does.
+-- With `trim`, also remove the dead-end path that only led to it: walk back while the next node
+-- is a plain node left with one allocated neighbour, stopping at the start, a Notable or
+-- Keystone, or a node in `keep` (id set).
+-- Returns the points freed.
+function AtlasSpecClass:RemoveNodes(nodes, keep, trim)
+	keep = keep or { }
+	local nodeMap = self.tree.nodes
+	local startId = self.tree.startNodeId
+	local before = self:CountAllocNodes()
+	local function allocatedNeighbours(node)
+		local list = { }
+		for _, linkId in ipairs(node.linkedId) do
+			if self.allocNodes[linkId] then
+				t_insert(list, nodeMap[linkId])
+			end
+		end
+		return list
+	end
+	local function trimmable(node)
+		return node.id ~= startId and not keep[node.id] and node.type ~= "Notable" and node.type ~= "Keystone"
+			and #allocatedNeighbours(node) <= 1
+	end
+	for _, node in ipairs(nodes) do
+		if self.allocNodes[node.id] and node.id ~= startId then
+			local edge = allocatedNeighbours(node)
+			for _, dep in ipairs(self:GetDependents(node)) do
+				self.allocNodes[dep.id] = nil
+			end
+			for _, other in ipairs(trim and edge or { }) do
+				local cur = other
+				while cur and self.allocNodes[cur.id] and trimmable(cur) do
+					local nextList = allocatedNeighbours(cur)
+					self.allocNodes[cur.id] = nil
+					cur = nextList[1]
+				end
+			end
+			self:BuildPaths()
+		end
+	end
+	local freed = before - self:CountAllocNodes()
+	if freed > 0 then
+		self.modFlag = true
+	end
+	return freed
 end

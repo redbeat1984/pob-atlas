@@ -21,7 +21,12 @@ function AtlasFillListClass:GetRowValue(column, index, node)
 		local box = ticked and "^7[^2x^7] " or "^7[   ] "
 		local typeColor = (node.type == "Keystone" and colorCodes.UNIQUE) or (node.type == "Notable" and colorCodes.RARE) or "^7"
 		local dist = self.atlasTab.spec.dist[node.id]
-		local cost = dist and ("  ^8("..dist..")") or "  ^8(no path)"
+		local cost
+		if self.atlasTab.spec.allocNodes[node.id] then
+			cost = ticked and "  ^8(taken)" or ("  "..colorCodes.NEGATIVE.."(remove)")
+		else
+			cost = dist and ("  ^8("..dist..")") or "  ^8(no path)"
+		end
 		local stat = node.sd and node.sd[1] and ("  ^8"..node.sd[1]:gsub("%s*\n%s*", " ")) or ""
 		return box..typeColor..node.dn..cost..stat
 	end
@@ -36,7 +41,11 @@ function AtlasFillListClass:AddValueTooltip(tooltip, index, node)
 		end
 	end
 	local dist = self.atlasTab.spec.dist[node.id]
-	tooltip:AddLine(14, dist and ("^8"..dist.." point(s) from the current tree") or "^8No path from the current tree")
+	if self.atlasTab.spec.allocNodes[node.id] then
+		tooltip:AddLine(14, "^8In the tree. Untick it and press Fill Tree to remove it")
+	else
+		tooltip:AddLine(14, dist and ("^8"..dist.." point(s) from the current tree") or "^8No path from the current tree")
+	end
 	tooltip:AddLine(14, "^8Click to tick or untick")
 end
 

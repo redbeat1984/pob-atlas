@@ -61,7 +61,7 @@ function AtlasTabClass:AtlasTab(build)
 	self.fillSearch = ""
 	self.fillTicks = { }
 	self.fillList = { }
-	self.fillEstimate = { count = 0, points = 0, unreachable = 0 }
+	self.fillEstimate = { count = 0, add = 0, remove = 0, addCount = 0, removeCount = 0, unreachable = 0 }
 	self.fillWidth = 420
 	local function panelShown() return self.fillOpen end
 	self.fillAnchor = new("Control"):Control(nil, {0, 0, 0, 0})
@@ -85,8 +85,12 @@ function AtlasTabClass:AtlasTab(build)
 	self.controls.fillInfo = new("LabelControl"):LabelControl({"TOPLEFT", self.fillAnchor, "TOPLEFT"}, {112, 64, 0, 16}, function()
 		local est = self.fillEstimate
 		local left = self.tree.totalPoints - self.spec:CountAllocNodes()
-		local color = est.points > left and colorCodes.NEGATIVE or "^7"
-		local text = "^7"..est.count.." of "..#self.fillList.." ticked, "..color..est.points.." points^7 ("..left.." left)"
+		local color = est.add - est.remove > left and colorCodes.NEGATIVE or "^7"
+		local text = "^7"..est.count.." of "..#self.fillList.." ticked, "..color.."+"..est.add.." points^7"
+		if est.remove > 0 then
+			text = text..", "..colorCodes.NEGATIVE.."-"..est.remove.."^7"
+		end
+		text = text.." ("..left.." left)"
 		if est.unreachable > 0 then
 			text = text.."  ^8"..est.unreachable.." no path"
 		end
@@ -99,8 +103,14 @@ function AtlasTabClass:AtlasTab(build)
 		self:RunFill()
 	end)
 	self.controls.fillGo.shown = panelShown
-	self.controls.fillGo.enabled = function() return self.fillEstimate.count > 0 end
-	self.controls.fillGo.tooltipText = "Allocate every ticked node, nearest first, along the shortest paths from the current tree"
+	self.fillTrim = false
+	self.controls.fillTrim = new("CheckBoxControl"):CheckBoxControl({"TOPLEFT", self.fillAnchor, "TOPLEFT"}, {200, 0, 20}, "Trim paths when removing:", function(state)
+		self.fillTrim = state
+		self:UpdateFillEstimate()
+	end, "When a node is removed, also remove the plain travel nodes that only led to it.\nStops at a junction, a Notable or Keystone, the start, or another ticked node.", false)
+	self.controls.fillTrim.shown = panelShown
+	self.controls.fillGo.enabled = function() return self.fillEstimate.addCount > 0 or self.fillEstimate.removeCount > 0 end
+	self.controls.fillGo.tooltipText = "Remove every unticked node that is in the tree, then allocate every ticked node, nearest first, along the shortest paths"
 	self.controls.fillMsg = new("LabelControl"):LabelControl({"LEFT", self.controls.fillGo, "RIGHT"}, {10, 0, 0, 16}, function() return self.fillMsg or "" end)
 	self.controls.fillMsg.shown = panelShown
 	self:SetActiveLoadout(1)
@@ -128,7 +138,7 @@ function AtlasTabClass:SetFillSearch(text, syncTreeSearch)
 	self:RebuildFillList()
 end
 
--- Unallocated nodes that match the panel search, nearest first
+-- Nodes that match the panel search, those already in the tree first, then nearest first
 function AtlasTabClass:RebuildFillList()
 	local list = self.fillList
 	for i = #list, 1, -1 do
@@ -136,8 +146,7 @@ function AtlasTabClass:RebuildFillList()
 	end
 	if self.fillSearch:match("%S") then
 		for id, node in pairs(self.tree.nodes) do
-			if node.type ~= "Mastery" and node.type ~= "Start" and not self.spec.allocNodes[id]
-				and self.viewer:NodeMatchesText(node, self.fillSearch) then
+			if node.type ~= "Mastery" and node.type ~= "Start" and self.viewer:NodeMatchesText(node, self.fillSearch) then
 				table.insert(list, node)
 			end
 		end
@@ -157,32 +166,52 @@ function AtlasTabClass:RebuildFillList()
 	self:UpdateFillEstimate()
 end
 
-function AtlasTabClass:GetTickedFillNodes()
-	local ticked = { }
+-- Ticked nodes not in the tree are added; unticked nodes in the tree are removed
+function AtlasTabClass:GetFillPlan()
+	local toAdd, toRemove, keep, removed = { }, { }, { }, { }
+	local ticked = 0
 	for _, node in ipairs(self.fillList) do
-		if self.fillTicks[node.id] ~= false then
-			table.insert(ticked, node)
+		local isTicked = self.fillTicks[node.id] ~= false
+		local inTree = self.spec.allocNodes[node.id]
+		if isTicked then
+			ticked = ticked + 1
+			keep[node.id] = true
+			if not inTree then
+				table.insert(toAdd, node)
+			end
+		elseif inTree then
+			table.insert(toRemove, node)
+			removed[node.id] = true
 		end
 	end
-	return ticked
+	return toAdd, toRemove, keep, removed, ticked
 end
 
--- Points the fill would take, worked out on a copy of the active tree
-function AtlasTabClass:UpdateFillEstimate()
-	local ticked = self:GetTickedFillNodes()
-	local points, unreachable = 0, 0
-	if #ticked > 0 then
-		points, unreachable = self.spec:Copy():FillNodes(ticked)
+-- Removals first, then additions that never route through a removed node
+local function applyFill(spec, trim, toAdd, toRemove, keep, removed)
+	local freed = #toRemove > 0 and spec:RemoveNodes(toRemove, keep, trim) or 0
+	local added, unreachable = 0, 0
+	if #toAdd > 0 then
+		added, unreachable = spec:FillNodes(toAdd, removed)
 	end
-	self.fillEstimate = { count = #ticked, points = points, unreachable = unreachable }
-	self.controls.fillAll.state = #ticked > 0 and #ticked == #self.fillList
+	return added, freed, unreachable
+end
+
+-- Points the fill would add and free, worked out on a copy of the active tree
+function AtlasTabClass:UpdateFillEstimate()
+	local toAdd, toRemove, keep, removed, ticked = self:GetFillPlan()
+	local added, freed, unreachable = 0, 0, 0
+	if #toAdd > 0 or #toRemove > 0 then
+		added, freed, unreachable = applyFill(self.spec:Copy(), self.fillTrim, toAdd, toRemove, keep, removed)
+	end
+	self.fillEstimate = { count = ticked, add = added, remove = freed, addCount = #toAdd, removeCount = #toRemove, unreachable = unreachable }
+	self.controls.fillAll.state = ticked > 0 and ticked == #self.fillList
 end
 
 function AtlasTabClass:RunFill()
-	local ticked = self:GetTickedFillNodes()
-	local added, unreachable = self.spec:FillNodes(ticked)
+	local added, freed, unreachable = applyFill(self.spec, self.fillTrim, self:GetFillPlan())
 	self.viewer.tooltip.updateParams = nil
-	local msg = "^7Added "..added.." point(s)"
+	local msg = "^7Added "..added..", removed "..freed.." point(s)"
 	if unreachable > 0 then
 		msg = msg..", ^8"..unreachable.." node(s) have no path"
 	end
@@ -331,8 +360,9 @@ function AtlasTabClass:Draw(viewPort, inputEvents)
 	local panelWidth = self.fillOpen and self.fillWidth or 0
 	self.fillAnchor.x = viewPort.x + viewPort.width - panelWidth
 	self.fillAnchor.y = viewPort.y
-	self.controls.fillListCtl.height = viewPort.height - 34 - 90 - 36
+	self.controls.fillListCtl.height = viewPort.height - 34 - 90 - 62
 	self.controls.fillGo.y = viewPort.height - 34 - 30
+	self.controls.fillTrim.y = viewPort.height - 34 - 56
 	if self.fillOpen and (self.fillListSpec ~= self.spec or self.fillListVersion ~= self.spec.summaryVersion) then
 		self:RebuildFillList()
 	end
