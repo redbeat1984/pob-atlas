@@ -11,14 +11,17 @@ local t_insert = table.insert
 ---@class AtlasSpec
 local AtlasSpecClass = newClass("AtlasSpec")
 
-function AtlasSpecClass:AtlasSpec(tree)
+function AtlasSpecClass:AtlasSpec(tree, title)
 	self.tree = tree
+	self.title = title
 	self:ResetNodes()
+	self.modFlag = false
 	return self
 end
 
 function AtlasSpecClass:ResetNodes()
 	self.allocNodes = { }
+	self.modFlag = true
 	local start = self.tree.nodes[self.tree.startNodeId]
 	if start then
 		self.allocNodes[start.id] = start
@@ -90,6 +93,7 @@ function AtlasSpecClass:AllocNode(node)
 	for _, pathNode in ipairs(path) do
 		self.allocNodes[pathNode.id] = pathNode
 	end
+	self.modFlag = true
 	self:BuildPaths()
 	return true
 end
@@ -143,11 +147,12 @@ function AtlasSpecClass:DeallocNode(node)
 	for _, dep in ipairs(self:GetDependents(node)) do
 		self.allocNodes[dep.id] = nil
 	end
+	self.modFlag = true
 	self:BuildPaths()
 	return true
 end
 
--- Allocated node ids, sorted, for saving (phase 3)
+-- Allocated node ids, sorted, for saving
 function AtlasSpecClass:GetAllocIds()
 	local ids = { }
 	for id in pairs(self.allocNodes) do
@@ -206,4 +211,72 @@ function AtlasSpecClass:GetStatSummary()
 	table.sort(keystones)
 	self.summary, self.summaryKeystones = summary, keystones
 	return summary, keystones
+end
+
+-- Replace the allocation with these node ids. Ids missing from the tree are skipped
+-- and counted, so a loadout from another tree version still loads what it can.
+function AtlasSpecClass:SetAllocIds(ids)
+	self.allocNodes = { }
+	local start = self.tree.nodes[self.tree.startNodeId]
+	if start then
+		self.allocNodes[start.id] = start
+	end
+	local skipped = 0
+	for _, id in ipairs(ids) do
+		local node = self.tree.nodes[id]
+		if node and node.type ~= "Mastery" then
+			self.allocNodes[id] = node
+		else
+			skipped = skipped + 1
+		end
+	end
+	self:BuildPaths()
+	return skipped
+end
+
+function AtlasSpecClass:Copy(title)
+	local copy = new("AtlasSpec"):AtlasSpec(self.tree, title)
+	copy:SetAllocIds(self:GetAllocIds())
+	copy.modFlag = false
+	return copy
+end
+
+-- Tree link in the official tree format (same layout as PassiveSpec:EncodeURL, version 6,
+-- class and ascendancy 0, no cluster or mastery entries)
+function AtlasSpecClass:EncodeURL(prefix)
+	local a = { 0, 0, 0, 6, 0, 0 }
+	local count = 0
+	for _, id in ipairs(self:GetAllocIds()) do
+		if id < 65536 and count < 255 then
+			t_insert(a, math.floor(id / 256))
+			t_insert(a, id % 256)
+			count = count + 1
+		end
+	end
+	t_insert(a, 7, count)
+	t_insert(a, 0)
+	t_insert(a, 0)
+	return (prefix or "")..common.base64.encode(string.char(unpack(a))):gsub("+", "-"):gsub("/", "_")
+end
+
+-- Read a tree link. Returns an error message, or nil and the number of skipped ids.
+function AtlasSpecClass:DecodeURL(url)
+	local code = url:gsub("%s", ""):gsub("[?#].*$", ""):gsub("/+$", ""):gsub("^.+/", "")
+	local b = common.base64.decode(code:gsub("-", "+"):gsub("_", "/"))
+	if not b or #b < 6 then
+		return "Invalid atlas tree link (unrecognised format)"
+	end
+	local ver = b:byte(1) * 16777216 + b:byte(2) * 65536 + b:byte(3) * 256 + b:byte(4)
+	if ver > 6 then
+		return "Invalid atlas tree link (unknown version number '"..ver.."')"
+	end
+	local nodesStart = ver >= 4 and 8 or 7
+	local nodesEnd = ver >= 5 and 7 + (b:byte(7) * 2) or #b
+	local ids = { }
+	for i = nodesStart, nodesEnd - 1, 2 do
+		t_insert(ids, b:byte(i) * 256 + b:byte(i + 1))
+	end
+	local skipped = self:SetAllocIds(ids)
+	self.modFlag = true
+	return nil, skipped
 end
