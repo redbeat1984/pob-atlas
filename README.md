@@ -1,3 +1,23 @@
+# pob-atlas by R3DB3AT
+
+A fork of [Path of Building Community](https://github.com/PathOfBuildingCommunity/PathOfBuilding) (Path of Exile 1) that adds the 3.30 passive tree and an **atlas tree planner**.
+
+Made by R3DB3AT. Twitch: [twitch.tv/R3DB3AT](https://www.twitch.tv/R3DB3AT)
+
+### What it adds
+* **Atlas tab**: the 3.30 atlas passive tree. Allocate and remove nodes (150 points), with the combined atlas modifiers listed in the side bar.
+* **Search** with a golden ring around matching nodes.
+* **Fill**: a panel that lists every node a search finds. Tick what you want, untick what you do not want, then press Fill Tree. Ticked nodes are added along the shortest paths, nearest first, and unticked nodes already in the tree are removed. "Trim paths when removing" also removes the travel nodes that only led to a removed node.
+* **Named atlas trees** saved with the build, and official atlas tree link import and export.
+* The **3.30 passive tree** (normal and ruthless), from GGG's preview export.
+
+### How to run
+Download the zip from Releases (or clone this repository), unzip it and run `runtime\Path{space}of{space}Building.exe`. It runs in Developer Mode and does not update itself, so it never turns back into the official Path of Building. Atlas trees inside build codes are only read by this version.
+
+Licence: MIT, as the original (see [LICENSE.md](LICENSE.md)). All credit for Path of Building goes to its authors.
+
+---
+
 # Path of Building Community
 ## Welcome to Path of Building, an offline build planner for Path of Exile!
 

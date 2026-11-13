@@ -251,7 +251,7 @@ function main:Init()
 	end
 	self.controls.forkLabel = new("LabelControl"):LabelControl({"BOTTOMLEFT",self.anchorMain,"BOTTOMLEFT"}, {148, -26, 0, 16}, "")
 	self.controls.forkLabel.label = function()
-		return "^8PoB Community Fork"
+		return "^8pob-atlas by R3DB3AT"
 	end
 	self.controls.versionLabel = new("LabelControl"):LabelControl({"BOTTOMLEFT",self.anchorMain,"BOTTOMLEFT"}, {148, -2, 0, 16}, "")
 	self.controls.versionLabel.label = function()
@@ -1474,8 +1474,11 @@ function main:OpenAboutPopup(helpSectionIndex)
 	controls.close = new("ButtonControl"):ButtonControl({"TOPRIGHT",nil,"TOPRIGHT"}, {-10, 10, 50, 20}, "Close", function()
 		self:ClosePopup()
 	end)
-	controls.version = new("LabelControl"):LabelControl(nil, {0, 18, 0, 18}, "^7Path of Building Community Fork v"..launch.versionNumber)
-	controls.forum = new("LabelControl"):LabelControl(nil, {0, 36, 0, 18}, "^7Based on Openarl's Path of Building")
+	controls.version = new("LabelControl"):LabelControl(nil, {0, 11, 0, 16}, "^7pob-atlas by R3DB3AT, built on Path of Building Community Fork v"..launch.versionNumber)
+	controls.forum = new("LabelControl"):LabelControl(nil, {0, 27, 0, 14}, "^7Based on Openarl's Path of Building")
+	controls.twitch = new("ButtonControl"):ButtonControl(nil, {0, 43, 438, 17}, "^7R3DB3AT on Twitch: ^x4040FFhttps://www.twitch.tv/R3DB3AT", function(control)
+		OpenURL("https://www.twitch.tv/R3DB3AT")
+	end)
 	controls.github = new("ButtonControl"):ButtonControl(nil, {0, 62, 438, 18}, "^7GitHub page: ^x4040FFhttps://github.com/PathOfBuildingCommunity/PathOfBuilding", function(control)
 		OpenURL("https://github.com/PathOfBuildingCommunity/PathOfBuilding")
 	end)
