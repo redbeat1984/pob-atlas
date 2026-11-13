@@ -60,7 +60,12 @@ function AtlasTreeViewClass:Zoom(level, viewPort)
 end
 
 function AtlasTreeViewClass:DoesNodeMatchSearch(node)
-	local search = self.searchStr:lower()
+	return self:NodeMatchesText(node, self.searchStr)
+end
+
+-- Node name, stats or variant stats contain `text` (case-insensitive, plain text)
+function AtlasTreeViewClass:NodeMatchesText(node, text)
+	local search = (text or ""):lower()
 	if search == "" or not node.dn then
 		return false
 	end

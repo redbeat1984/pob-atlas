@@ -280,3 +280,42 @@ function AtlasSpecClass:DecodeURL(url)
 	self.modFlag = true
 	return nil, skipped
 end
+
+-- Allocate every node in `nodes`, nearest first: each round takes the unallocated target with
+-- the shortest path from the current tree, allocates that path, and measures again, so later
+-- targets can route through nodes taken for earlier ones.
+-- Returns the points added and the number of targets that have no path.
+function AtlasSpecClass:FillNodes(nodes)
+	local pending = { }
+	for _, node in ipairs(nodes) do
+		if not self.allocNodes[node.id] then
+			pending[node.id] = node
+		end
+	end
+	local before = self:CountAllocNodes()
+	while true do
+		local best, bestDist
+		for id, node in pairs(pending) do
+			if self.allocNodes[id] then
+				pending[id] = nil
+			else
+				local dist = self.dist[id]
+				if dist and (not bestDist or dist < bestDist or (dist == bestDist and id < best.id)) then
+					best, bestDist = node, dist
+				end
+			end
+		end
+		if not best then
+			break
+		end
+		self:AllocNode(best)
+		pending[best.id] = nil
+	end
+	local unreachable = 0
+	for id in pairs(pending) do
+		if not self.allocNodes[id] then
+			unreachable = unreachable + 1
+		end
+	end
+	return self:CountAllocNodes() - before, unreachable
+end
