@@ -48,7 +48,9 @@ function AtlasSpecClass:BuildPaths()
 		head = head + 1
 		for _, linkId in ipairs(node.linkedId) do
 			local other = nodes[linkId]
-			if isPathable(other) and dist[linkId] == nil and not (self.blockedNodes and self.blockedNodes[linkId]) then
+			-- With `noGateways`, the link between the two ends of a gateway is not walked
+			if isPathable(other) and dist[linkId] == nil and not (self.blockedNodes and self.blockedNodes[linkId])
+				and not (self.noGateways and node.type == "Wormhole" and other.type == "Wormhole") then
 				dist[linkId] = dist[node.id] + 1
 				prev[linkId] = node.id
 				t_insert(queue, other)
@@ -285,10 +287,13 @@ end
 -- the shortest path from the current tree, allocates that path, and measures again, so later
 -- targets can route through nodes taken for earlier ones.
 -- `blocked` (optional, id set): nodes the paths must not pass through.
+-- `noGateways` (optional): paths may not jump from one end of a gateway to the other.
 -- Returns the points added and the number of targets that have no path.
-function AtlasSpecClass:FillNodes(nodes, blocked)
-	if blocked and next(blocked) then
-		self.blockedNodes = blocked
+function AtlasSpecClass:FillNodes(nodes, blocked, noGateways)
+	local limited = (blocked and next(blocked)) or noGateways
+	if limited then
+		self.blockedNodes = (blocked and next(blocked)) and blocked or nil
+		self.noGateways = noGateways or nil
 		self:BuildPaths()
 	end
 	local pending = { }
@@ -316,8 +321,8 @@ function AtlasSpecClass:FillNodes(nodes, blocked)
 		self:AllocNode(best)
 		pending[best.id] = nil
 	end
-	if self.blockedNodes then
-		self.blockedNodes = nil
+	if limited then
+		self.blockedNodes, self.noGateways = nil, nil
 		self:BuildPaths()
 	end
 	local unreachable = 0
