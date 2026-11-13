@@ -54,6 +54,8 @@ function AtlasSpecClass:BuildPaths()
 	end
 	self.dist, self.prev = dist, prev
 	self.depCache = { }
+	self.summary = nil
+	self.summaryVersion = (self.summaryVersion or 0) + 1
 end
 
 -- Unallocated nodes that allocating this node would take, from the node back towards the tree
@@ -155,4 +157,53 @@ function AtlasSpecClass:GetAllocIds()
 	end
 	table.sort(ids)
 	return ids
+end
+
+-- Sum of every stat line on the allocated nodes. Lines that differ only by their numbers
+-- are merged and their numbers added; a line with no number shows a count when repeated.
+-- Returns { { text = "...", count = n }, ... } sorted by text, and the keystone names.
+function AtlasSpecClass:GetStatSummary()
+	if self.summary then
+		return self.summary, self.summaryKeystones
+	end
+	local byKey, order, keystones = { }, { }, { }
+	local ids = self:GetAllocIds()
+	for _, id in ipairs(ids) do
+		local node = self.tree.nodes[id]
+		if node.type == "Keystone" then
+			t_insert(keystones, node.dn)
+		end
+		for _, line in ipairs(node.sd or { }) do
+			line = line:gsub("%s*\n%s*", " ")
+			local nums = { }
+			local key = line:gsub("%d+%.?%d*", function(num)
+				t_insert(nums, tonumber(num))
+				return "#"
+			end)
+			local entry = byKey[key]
+			if not entry then
+				entry = { key = key, nums = { }, count = 0 }
+				byKey[key] = entry
+				t_insert(order, entry)
+			end
+			entry.count = entry.count + 1
+			for i, num in ipairs(nums) do
+				entry.nums[i] = (entry.nums[i] or 0) + num
+			end
+		end
+	end
+	local summary = { }
+	for _, entry in ipairs(order) do
+		local i = 0
+		local text = entry.key:gsub("#", function()
+			i = i + 1
+			local num = entry.nums[i]
+			return num == math.floor(num) and string.format("%d", num) or string.format("%g", num)
+		end)
+		t_insert(summary, { text = text, count = (#entry.nums == 0 and entry.count > 1) and entry.count or nil })
+	end
+	table.sort(summary, function(a, b) return a.text:lower() < b.text:lower() end)
+	table.sort(keystones)
+	self.summary, self.summaryKeystones = summary, keystones
+	return summary, keystones
 end

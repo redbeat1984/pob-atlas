@@ -580,6 +580,14 @@ function buildMode:Init(dbFileName, buildName, buildXML, convertBuild, importLin
 	function self.controls.statBox.onClick(hoveredLine)
 		self:SetDisplayStat(hoveredLine, true)
 	end
+	-- pob-atlas fork: on the Atlas tab the stat box shows the combined atlas modifiers
+	self.controls.statBox.shown = function() return self.viewMode ~= "ATLAS" end
+	self.controls.atlasStatBox = new("TextListControl"):TextListControl({"TOPLEFT",self.controls.statBoxAnchor,"BOTTOMLEFT"}, {0, 2, 300, 0}, {{x=4,align="LEFT"}})
+	self.controls.atlasStatBox.shown = function() return self.viewMode == "ATLAS" end
+	self.controls.atlasStatBox.height = function(control)
+		local x, y = control:GetPos()
+		return main.screenH - main.mainBarHeight - 4 - y
+	end
 	self.controls.warnings = new("Control"):Control({"TOPLEFT",self.controls.statBox,"BOTTOMLEFT",true}, {0, 0, 0, 18})
 	self.controls.warnings.lines = {}
 	self.controls.warnings.width = function(control)
@@ -1322,6 +1330,7 @@ function buildMode:OnFrame(inputEvents)
 		self.compareTab:Draw(tabViewPort, inputEvents)
 	elseif self.viewMode == "ATLAS" then
 		self.atlasTab:Draw(tabViewPort, inputEvents)
+		self.controls.atlasStatBox.list = self.atlasTab:GetSummaryList(300 - 20)
 	end
 
 	-- Draw overlay panes on top of all tab content (last = topmost)
