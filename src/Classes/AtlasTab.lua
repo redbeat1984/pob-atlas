@@ -109,6 +109,12 @@ function AtlasTabClass:AtlasTab(build)
 		self:UpdateFillEstimate()
 	end, "When a node is removed, also remove the plain travel nodes that only led to it.\nStops at a junction, a Notable or Keystone, the start, or another ticked node.", false)
 	self.controls.fillTrim.shown = panelShown
+	self.fillGateways = true
+	self.controls.fillGateways = new("CheckBoxControl"):CheckBoxControl({"TOPLEFT", self.fillAnchor, "TOPLEFT"}, {390, 0, 20}, "Use gateways:", function(state)
+		self.fillGateways = state
+		self:UpdateFillEstimate()
+	end, "Let paths jump from one end of a gateway to the other when that is shorter.\nUntick to route only along the tree lines.", true)
+	self.controls.fillGateways.shown = panelShown
 	self.controls.fillGo.enabled = function() return self.fillEstimate.addCount > 0 or self.fillEstimate.removeCount > 0 end
 	self.controls.fillGo.tooltipText = "Remove every unticked node that is in the tree, then allocate every ticked node, nearest first, along the shortest paths"
 	self.controls.fillMsg = new("LabelControl"):LabelControl({"LEFT", self.controls.fillGo, "RIGHT"}, {10, 0, 0, 16}, function() return self.fillMsg or "" end)
@@ -188,11 +194,11 @@ function AtlasTabClass:GetFillPlan()
 end
 
 -- Removals first, then additions that never route through a removed node
-local function applyFill(spec, trim, toAdd, toRemove, keep, removed)
+local function applyFill(spec, trim, noGateways, toAdd, toRemove, keep, removed)
 	local freed = #toRemove > 0 and spec:RemoveNodes(toRemove, keep, trim) or 0
 	local added, unreachable = 0, 0
 	if #toAdd > 0 then
-		added, unreachable = spec:FillNodes(toAdd, removed)
+		added, unreachable = spec:FillNodes(toAdd, removed, noGateways)
 	end
 	return added, freed, unreachable
 end
@@ -202,14 +208,14 @@ function AtlasTabClass:UpdateFillEstimate()
 	local toAdd, toRemove, keep, removed, ticked = self:GetFillPlan()
 	local added, freed, unreachable = 0, 0, 0
 	if #toAdd > 0 or #toRemove > 0 then
-		added, freed, unreachable = applyFill(self.spec:Copy(), self.fillTrim, toAdd, toRemove, keep, removed)
+		added, freed, unreachable = applyFill(self.spec:Copy(), self.fillTrim, not self.fillGateways, toAdd, toRemove, keep, removed)
 	end
 	self.fillEstimate = { count = ticked, add = added, remove = freed, addCount = #toAdd, removeCount = #toRemove, unreachable = unreachable }
 	self.controls.fillAll.state = ticked > 0 and ticked == #self.fillList
 end
 
 function AtlasTabClass:RunFill()
-	local added, freed, unreachable = applyFill(self.spec, self.fillTrim, self:GetFillPlan())
+	local added, freed, unreachable = applyFill(self.spec, self.fillTrim, not self.fillGateways, self:GetFillPlan())
 	self.viewer.tooltip.updateParams = nil
 	local msg = "^7Added "..added..", removed "..freed.." point(s)"
 	if unreachable > 0 then
@@ -363,6 +369,7 @@ function AtlasTabClass:Draw(viewPort, inputEvents)
 	self.controls.fillListCtl.height = viewPort.height - 34 - 90 - 62
 	self.controls.fillGo.y = viewPort.height - 34 - 30
 	self.controls.fillTrim.y = viewPort.height - 34 - 56
+	self.controls.fillGateways.y = self.controls.fillTrim.y
 	if self.fillOpen and (self.fillListSpec ~= self.spec or self.fillListVersion ~= self.spec.summaryVersion) then
 		self:RebuildFillList()
 	end

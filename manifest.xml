@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <PoBVersion>
-	<Version number="2.67.2-atlas.38e70265" />
+	<Version number="2.67.2-atlas.1f1a6629" />
 	<Source part="default" url="https://raw.githubusercontent.com/redbeat1984/pob-atlas/{branch}/" />
 	<Source part="runtime" platform="win32" url="https://raw.githubusercontent.com/redbeat1984/pob-atlas/{branch}/runtime/" />
 	<Source part="program" url="https://raw.githubusercontent.com/redbeat1984/pob-atlas/{branch}/src/" />
@@ -123,8 +123,8 @@
 	<File name="Assets/warlordicon.png" part="program" sha1="cca050c84884f5c0bb1380ece51d3c4b32be4900" />
 	<File name="Classes/AtlasFillListControl.lua" part="program" sha1="a77cef5b71ad3607976eddeb7fe2dd90dbdb9131" />
 	<File name="Classes/AtlasLoadoutListControl.lua" part="program" sha1="e498c92d2334a88b890da412103628dcf8194d14" />
-	<File name="Classes/AtlasSpec.lua" part="program" sha1="454fdc2e09a77b8f17d84d2fbd2eb12ac9efc6b7" />
-	<File name="Classes/AtlasTab.lua" part="program" sha1="e3d38b806d42a3ed686e6a1ec8ec342b2c5190b8" />
+	<File name="Classes/AtlasSpec.lua" part="program" sha1="7f1edf3421f74c4218f5d7bbaa1f0e559e35d637" />
+	<File name="Classes/AtlasTab.lua" part="program" sha1="c385d3c9dc536608afe6cc1f7c360f5e3478229f" />
 	<File name="Classes/AtlasTree.lua" part="program" sha1="cff2dc133b3e4aa8bde4b7280976a80540ebfafd" />
 	<File name="Classes/AtlasTreeView.lua" part="program" sha1="d601b36324fbdf41d34ed40c85206bfda7ebb211" />
 	<File name="Classes/BuildListControl.lua" part="program" sha1="f60f0d7f6aecbe851db896913cd1aa707c7fb304" />
