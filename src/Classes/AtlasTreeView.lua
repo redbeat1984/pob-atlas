@@ -21,6 +21,8 @@ function AtlasTreeViewClass:AtlasTreeView()
 	self.zoomY = 0
 	self.searchStr = ""
 	self.tooltip = new("Tooltip"):Tooltip()
+	self.highlightRing = NewImageHandle()
+	self.highlightRing:Load("Assets/small_ring.png", "CLAMP")
 	return self
 end
 
@@ -322,10 +324,10 @@ function AtlasTreeViewClass:Draw(spec, viewPort, inputEvents)
 				end
 				if self:DoesNodeMatchSearch(node) then
 					SetDrawLayer(nil, 30)
-					SetDrawColor(1, 0.85, 0)
-					local size = node.size * scale
-					DrawImage(nil, scrX - size, scrY - size * 1.1, size * 2, size * 0.2)
-					DrawImage(nil, scrX - size, scrY + size * 0.9, size * 2, size * 0.2)
+					-- Golden ring around search matches, like the red ring on the passive tree
+					SetDrawColor(1, 0.78, 0.25)
+					local size = m_max(node.size * scale * 1.8, 10)
+					DrawImage(self.highlightRing, scrX - size, scrY - size, size * 2, size * 2)
 				end
 			end
 			SetDrawColor(1, 1, 1)
