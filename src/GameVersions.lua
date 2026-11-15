@@ -228,7 +228,7 @@ treeVersions = {
 	["3_30_ruthless"] = {
 		display = "3.30 (ruthless)",
 		num = 3.30,
-		url = "https://www.pathofexile.com/passive-skill-tree/ruthless/",
+		url = "https://www.pathofexile.com/passive-skill-tree/ruthless/"
 	},
 	["3_30"] = {
 		display = "3.30",
@@ -239,6 +239,8 @@ treeVersions = {
 
 ---Mapping PoEPlanner.com version when importing trees from there (https://cdn.poeplanner.com/json/versions.json)
 poePlannerVersions = {
+	[55] = "3_30",
+	[54] = "3_30_ruthless",
 	[51] = "3_29",
 	[50] = "3_29_ruthless",
 	-- [49] = "3_29_alternate",
