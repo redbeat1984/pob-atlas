@@ -513,6 +513,12 @@ function TreeTabClass:Load(xml, dbFileName)
 					main:OpenMessagePopup("Unknown Passive Tree Version", "The build you are trying to load uses an unrecognised version of the passive skill tree.\nYou may need to update the program before loading this build.")
 					return true
 				end
+				local specVersion = node.attrib.treeVersion or defaultTreeVersion
+				if treeVersions[specVersion] and treeVersions[specVersion].missing then
+					-- pob-atlas fork: this copy does not ship that tree (see GameVersions.lua)
+					main:OpenMessagePopup("Older Passive Tree", "This build uses the "..treeVersions[specVersion].display.." passive tree.\npob-atlas keeps the passive trees from "..treeVersions[oldestShippedTreeVersion or latestTreeVersion].display.." on, to stay small.\nOpen this build in the official Path of Building.")
+					return true
+				end
 				local newSpec = new("PassiveSpec"):PassiveSpec(self.build, node.attrib.treeVersion or defaultTreeVersion)
 				newSpec:Load(node, dbFileName)
 				t_insert(self.specList, newSpec)
@@ -735,7 +741,11 @@ function TreeTabClass:OpenImportPopup()
 		if major and minor then
 			--need leading 0 here
 			local newTreeVersionNum = tonumber(string.format("%d.%02d", major, minor))
-			if newTreeVersionNum >= treeVersions[defaultTreeVersion].num and newTreeVersionNum <= treeVersions[latestTreeVersion].num then
+			local linkVersion = string.format("%s_%s", major, minor) .. (alternateType and ("_" .. alternateType:gsub("-", "_")) or "")
+			if treeVersions[linkVersion] and treeVersions[linkVersion].missing then
+				-- pob-atlas fork: that tree is not shipped in this copy, use the latest one
+				print(string.format("Version '%s' is not shipped in this copy", linkVersion))
+			elseif newTreeVersionNum >= treeVersions[defaultTreeVersion].num and newTreeVersionNum <= treeVersions[latestTreeVersion].num then
 				-- no leading 0 here
 				return string.format("%s_%s", major, minor) .. (alternateType and ("_" .. alternateType:gsub("-", "_")) or "")
 			else

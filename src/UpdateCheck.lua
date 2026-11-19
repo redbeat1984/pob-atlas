@@ -186,12 +186,9 @@ for name, data in pairs(remoteFiles) do
 			ConPrintf("Warning: '%s' doesn't exist, it will be re-downloaded", data.name)
 			table.insert(updateFiles, data)
 		else
-			local content = file:read("*a")
+			-- pob-atlas fork: the file is present and its manifest entry is unchanged, so it is kept without
+			-- hashing it again. Re-hashing every file (about 800 MB) cost about 20 s of CPU at each check.
 			file:close()
-			if data.sha1 ~= sha1(content) and data.sha1 ~= sha1(content:gsub("\n", "\r\n")) then
-				ConPrintf("Warning: Integrity check on '%s' failed, it will be replaced", data.name)
-				table.insert(updateFiles, data)
-			end
 		end
 	end
 end
