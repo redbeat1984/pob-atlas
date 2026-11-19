@@ -280,3 +280,24 @@ poePlannerVersions = {
 	[10] = "3_6",
 	[3] = "2_6"
 }
+
+-- pob-atlas fork: downloaded copies leave out the older passive trees to stay small (2026-11-19).
+-- A version whose TreeData/<version>/tree.lua is not present is taken out of treeVersionList, so it is
+-- not offered and never loaded. Its treeVersions entry stays, marked missing, so its name and number
+-- still resolve, and a build that uses it gets a message instead of a crash. A full checkout keeps all.
+do
+	local kept = { }
+	for _, version in ipairs(treeVersionList) do
+		local file = io.open("TreeData/" .. version .. "/tree.lua", "r")
+		if file then
+			file:close()
+			table.insert(kept, version)
+		elseif treeVersions[version] then
+			treeVersions[version].missing = true
+		end
+	end
+	if #kept > 0 and #kept < #treeVersionList then
+		treeVersionList = kept
+		oldestShippedTreeVersion = kept[1]
+	end
+end
