@@ -298,6 +298,12 @@ do
 	end
 	if #kept > 0 and #kept < #treeVersionList then
 		treeVersionList = kept
-		oldestShippedTreeVersion = kept[1]
+		-- name the oldest normal tree (the list puts ruthless and alternate variants first)
+		for _, version in ipairs(kept) do
+			if version:match("^%d+_%d+$") then
+				oldestShippedTreeVersion = version
+				break
+			end
+		end
 	end
 end
