@@ -261,9 +261,24 @@ function AtlasSpecClass:EncodeURL(prefix)
 	return (prefix or "")..common.base64.encode(string.char(unpack(a))):gsub("+", "-"):gsub("/", "_")
 end
 
+-- The tree code inside a link or a bare code. Links put it in different places: the official site at
+-- the end (.../fullscreen-atlas-skill-tree/<code>), poe.ninja after /tree/ with an optional /full
+-- after it (.../atlas-trees/<league>/tree/<code>/full). Query and fragment are dropped, then the
+-- longest path part made of base64url characters is the code.
+local function treeCode(url)
+	local path = url:gsub("%s", ""):gsub("[?#].*$", "")
+	local code = ""
+	for part in path:gmatch("[^/]+") do
+		if #part > #code and part:match("^[%w%-_]+=*$") then
+			code = part
+		end
+	end
+	return code
+end
+
 -- Read a tree link. Returns an error message, or nil and the number of skipped ids.
 function AtlasSpecClass:DecodeURL(url)
-	local code = url:gsub("%s", ""):gsub("[?#].*$", ""):gsub("/+$", ""):gsub("^.+/", "")
+	local code = treeCode(url)
 	local b = common.base64.decode(code:gsub("-", "+"):gsub("_", "/"))
 	if not b or #b < 6 then
 		return "Invalid atlas tree link (unrecognised format)"

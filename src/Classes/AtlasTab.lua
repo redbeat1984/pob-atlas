@@ -309,8 +309,8 @@ end
 
 function AtlasTabClass:OpenImportPopup()
 	local controls = { }
-	controls.label = new("LabelControl"):LabelControl(nil, {0, 20, 0, 16}, "^7Paste an atlas tree link (replaces '"..(self.spec.title or "Default").."'):")
-	controls.edit = new("EditControl"):EditControl(nil, {0, 40, 450, 20}, "", nil, nil, nil, function(buf)
+	controls.label = new("LabelControl"):LabelControl(nil, {0, 20, 0, 16}, "^7Paste an atlas tree link from the official site or poe.ninja (replaces '"..(self.spec.title or "Default").."'):")
+	controls.edit = new("EditControl"):EditControl(nil, {0, 40, 600, 20}, "", nil, nil, nil, function(buf)
 		controls.msg.label = ""
 	end)
 	controls.msg = new("LabelControl"):LabelControl(nil, {0, 62, 0, 16}, "")
@@ -330,7 +330,7 @@ function AtlasTabClass:OpenImportPopup()
 	controls.cancel = new("ButtonControl"):ButtonControl(nil, {45, 85, 80, 20}, "Cancel", function()
 		main:ClosePopup()
 	end)
-	main:OpenPopup(480, 115, "Import Atlas Tree", controls, "import", "edit")
+	main:OpenPopup(630, 115, "Import Atlas Tree", controls, "import", "edit")
 end
 
 function AtlasTabClass:OpenExportPopup()
