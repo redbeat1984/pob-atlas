@@ -263,8 +263,8 @@ end
 
 -- The tree code inside a link or a bare code. Links put it in different places: the official site at
 -- the end (.../fullscreen-atlas-skill-tree/<code>), poe.ninja after /tree/ with an optional /full
--- after it (.../atlas-trees/<league>/tree/<code>/full). Query and fragment are dropped, then the
--- longest path part made of base64url characters is the code.
+-- after it (.../atlas-trees/<league>/tree/<code>/full), poeplanner.com after /atlas-tree/.
+-- Query and fragment are dropped, then the longest path part made of base64url characters is the code.
 local function treeCode(url)
 	local path = url:gsub("%s", ""):gsub("[?#].*$", "")
 	local code = ""
@@ -283,15 +283,23 @@ function AtlasSpecClass:DecodeURL(url)
 	if not b or #b < 6 then
 		return "Invalid atlas tree link (unrecognised format)"
 	end
-	local ver = b:byte(1) * 16777216 + b:byte(2) * 65536 + b:byte(3) * 256 + b:byte(4)
-	if ver > 6 then
-		return "Invalid atlas tree link (unknown version number '"..ver.."')"
-	end
-	local nodesStart = ver >= 4 and 8 or 7
-	local nodesEnd = ver >= 5 and 7 + (b:byte(7) * 2) or #b
 	local ids = { }
-	for i = nodesStart, nodesEnd - 1, 2 do
-		t_insert(ids, b:byte(i) * 256 + b:byte(i + 1))
+	local ver = b:byte(1) * 16777216 + b:byte(2) * 65536 + b:byte(3) * 256 + b:byte(4)
+	-- poeplanner.com: a 5 byte header, the node count as a little endian 16 bit number, then
+	-- little endian 16 bit node ids, then extra sections that are not read here.
+	local ppCount = #b >= 7 and (b:byte(6) + b:byte(7) * 256)
+	if (url:match("poeplanner%.com") or ver > 6) and ppCount and 7 + ppCount * 2 <= #b then
+		for i = 8, 7 + ppCount * 2, 2 do
+			t_insert(ids, b:byte(i) + b:byte(i + 1) * 256)
+		end
+	elseif ver > 6 then
+		return "Invalid atlas tree link (unknown version number '"..ver.."')"
+	else
+		local nodesStart = ver >= 4 and 8 or 7
+		local nodesEnd = ver >= 5 and 7 + (b:byte(7) * 2) or #b
+		for i = nodesStart, nodesEnd - 1, 2 do
+			t_insert(ids, b:byte(i) * 256 + b:byte(i + 1))
+		end
 	end
 	local skipped = self:SetAllocIds(ids)
 	self.modFlag = true
