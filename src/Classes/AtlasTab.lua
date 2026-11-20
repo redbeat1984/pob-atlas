@@ -309,7 +309,7 @@ end
 
 function AtlasTabClass:OpenImportPopup()
 	local controls = { }
-	controls.label = new("LabelControl"):LabelControl(nil, {0, 20, 0, 16}, "^7Paste an atlas tree link from the official site or poe.ninja (replaces '"..(self.spec.title or "Default").."'):")
+	controls.label = new("LabelControl"):LabelControl(nil, {0, 20, 0, 16}, "^7Paste an atlas tree link from the official site, poe.ninja or poeplanner (replaces '"..(self.spec.title or "Default").."'):")
 	controls.edit = new("EditControl"):EditControl(nil, {0, 40, 600, 20}, "", nil, nil, nil, function(buf)
 		controls.msg.label = ""
 	end)
