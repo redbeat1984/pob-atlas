@@ -6,7 +6,9 @@ local scopesOAuth = {
 	"account:profile",
 	"account:leagues",
 	"account:characters",
-	"account:trade"
+	"account:trade",
+	-- pob-atlas: atlas passive trees saved on the account (GET /league-account)
+	"account:league_accounts"
 }
 
 local filename = "poe_api_response.json"
@@ -235,4 +237,22 @@ end
 function PoEAPIClass:DownloadCharacter(realm, name, callback)
 	self:DownloadWithRateLimit("character-request-limit",
 		"/character" .. (realm == "pc" and "" or "/" .. realm) .. "/" .. name, callback)
+end
+
+---Fetches the leagues of the account from PoE's OAuth api
+---@param realm string Realm to fetch the leagues from
+---@param callback DownloadCallback
+function PoEAPIClass:DownloadAccountLeagues(realm, callback)
+	self:DownloadWithRateLimit("account-league-request-limit",
+		"/account/leagues" .. (realm == "pc" and "" or "/" .. realm), callback)
+end
+
+---Fetches the league account (atlas passive trees) from PoE's OAuth api. PoE1 only.
+---@param realm string Realm to fetch from
+---@param league string League id, for example "Standard"
+---@param callback DownloadCallback
+function PoEAPIClass:DownloadLeagueAccount(realm, league, callback)
+	local encoded = league:gsub("[^%w%-_%.~]", function(c) return string.format("%%%02X", c:byte()) end)
+	self:DownloadWithRateLimit("league-account-request-limit",
+		"/league-account" .. (realm == "pc" and "" or "/" .. realm) .. "/" .. encoded, callback)
 end

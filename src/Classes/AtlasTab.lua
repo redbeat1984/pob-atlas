@@ -50,7 +50,11 @@ function AtlasTabClass:AtlasTab(build)
 	self.controls.export = new("ButtonControl"):ButtonControl({"LEFT", self.controls.import, "RIGHT"}, {4, 0, 90, 20}, "Export Link", function()
 		self:OpenExportPopup()
 	end)
-	self.controls.points = new("LabelControl"):LabelControl({"LEFT", self.controls.export, "RIGHT"}, {12, 0, 0, 16}, function()
+	self.controls.account = new("ButtonControl"):ButtonControl({"LEFT", self.controls.export, "RIGHT"}, {4, 0, 130, 20}, "Import from Account", function()
+		self:OpenAccountImportPopup()
+	end)
+	self.controls.account.tooltipText = "Sign in with Path of Exile and import the atlas trees saved on your account for a league"
+	self.controls.points = new("LabelControl"):LabelControl({"LEFT", self.controls.account, "RIGHT"}, {12, 0, 0, 16}, function()
 		local used = self.spec:CountAllocNodes()
 		local total = self.tree.totalPoints
 		local color = used > total and colorCodes.NEGATIVE or "^7"
@@ -331,6 +335,154 @@ function AtlasTabClass:OpenImportPopup()
 		main:ClosePopup()
 	end)
 	main:OpenPopup(630, 115, "Import Atlas Tree", controls, "import", "edit")
+end
+
+-- Put atlas trees read from the account into the build. A tree whose name matches a saved atlas tree
+-- replaces its nodes; any other tree is added. Returns the number of trees and of skipped node ids.
+function AtlasTabClass:AddAccountTrees(trees)
+	local first, skippedAll = nil, 0
+	for _, tree in ipairs(trees) do
+		local title = tree.name or "Account tree"
+		local target
+		for i, loadout in ipairs(self.loadouts) do
+			if loadout.title == title then
+				target = i
+				break
+			end
+		end
+		if not target then
+			table.insert(self.loadouts, new("AtlasSpec"):AtlasSpec(self.tree, title))
+			target = #self.loadouts
+		end
+		local skipped = self.loadouts[target]:SetAllocIds(tree.hashes or { })
+		self.loadouts[target].modFlag = true
+		skippedAll = skippedAll + (skipped or 0)
+		first = first or target
+	end
+	if first then
+		self:SetActiveLoadout(first)
+		self.modFlag = true
+	end
+	return #trees, skippedAll
+end
+
+-- Atlas trees from the account (OAuth scope account:league_accounts, PC realm, PoE1 only).
+-- Uses the same sign-in as the character import. A token from before the atlas scope was added
+-- is refused for this call, so a refusal offers a new sign-in.
+function AtlasTabClass:OpenAccountImportPopup()
+	if not main.api then
+		main.api = new("PoEAPI"):PoEAPI(main.lastToken, main.lastRefreshToken, main.tokenExpiry)
+	end
+	local api = main.api
+	local controls = { }
+	local state = { msg = "", busy = false, leagues = nil }
+	local function setMsg(text, bad)
+		state.msg = (bad and colorCodes.NEGATIVE or "^7")..text
+	end
+	local loadLeagues
+	local function signIn()
+		state.busy = true
+		setMsg("Sign in on the Path of Exile page that opened in your browser...")
+		api:FetchAuthToken(function(errCode)
+			state.busy = false
+			if errCode then
+				setMsg("Sign-in failed: "..tostring(errCode), true)
+			else
+				loadLeagues()
+			end
+		end)
+	end
+	loadLeagues = function()
+		if not api.authToken then
+			state.needSignIn = true
+			setMsg("Sign in with Path of Exile to read your atlas trees.")
+			return
+		end
+		state.needSignIn = false
+		state.busy = true
+		setMsg("Reading your leagues...")
+		api:DownloadAccountLeagues("pc", function(body, err)
+			state.busy = false
+			if err then
+				if err:match("401") or err:match("403") then
+					api:ResetDetails()
+					state.needSignIn = true
+					setMsg("Please sign in again.", true)
+				else
+					setMsg("Could not read your leagues: "..err, true)
+				end
+				return
+			end
+			local list, pick = { }, 1
+			for i, league in ipairs(body and body.leagues or { }) do
+				table.insert(list, league.id)
+				if league.id == self.lastAccountLeague then
+					pick = i
+				elseif not self.lastAccountLeague and pick == 1 and (league.endAt or (league.category and league.category.current)) then
+					pick = i
+				end
+			end
+			if #list == 0 then
+				setMsg("The account has no leagues.", true)
+				return
+			end
+			state.leagues = list
+			controls.league:SetList(list)
+			controls.league.selIndex = pick
+			setMsg("Pick a league and press Import.")
+		end)
+	end
+	local function import()
+		local league = state.leagues and controls.league:GetSelValue()
+		if not league then
+			return
+		end
+		self.lastAccountLeague = league
+		state.busy = true
+		setMsg("Reading atlas trees in "..league.."...")
+		api:DownloadLeagueAccount("pc", league, function(body, err, timeNext)
+			state.busy = false
+			if err then
+				if err:match("401") or err:match("403") then
+					api:ResetDetails()
+					state.needSignIn = true
+					setMsg("Sign in again to allow reading atlas trees.", true)
+				elseif err:match("429") then
+					setMsg("Path of Exile asks to wait"..(timeNext and (" "..math.max(1, timeNext - os.time()).." s") or "").." before the next read.", true)
+				else
+					setMsg("Could not read atlas trees: "..err, true)
+				end
+				return
+			end
+			local trees = body and body.league_account and body.league_account.atlas_passive_trees or { }
+			if #trees == 0 then
+				setMsg("No atlas trees saved in "..league..".", true)
+				return
+			end
+			local count, skipped = self:AddAccountTrees(trees)
+			self.viewer.tooltip.updateParams = nil
+			main:ClosePopup()
+			local text = "Imported "..count.." atlas tree(s) from "..league.."."
+			if skipped > 0 then
+				text = text.." "..skipped.." node(s) are not on this atlas tree and were skipped."
+			end
+			main:OpenMessagePopup("Import from Account", text)
+		end)
+	end
+	controls.leagueLabel = new("LabelControl"):LabelControl(nil, {-120, 24, 0, 16}, "^7League:")
+	controls.league = new("DropDownControl"):DropDownControl(nil, {40, 22, 250, 20}, { }, nil)
+	controls.league.enabled = function() return state.leagues ~= nil and not state.busy end
+	controls.msg = new("LabelControl"):LabelControl(nil, {0, 52, 0, 16}, function() return state.msg end)
+	controls.note = new("LabelControl"):LabelControl(nil, {0, 72, 0, 14}, "^8Trees with the same name are replaced, others are added. Choice notable effects are not imported yet.")
+	controls.signIn = new("ButtonControl"):ButtonControl(nil, {-135, 100, 80, 20}, "Sign in", signIn)
+	controls.signIn.enabled = function() return not state.busy end
+	controls.import = new("ButtonControl"):ButtonControl(nil, {-45, 100, 80, 20}, "Import", import)
+	controls.import.enabled = function() return state.leagues ~= nil and not state.busy end
+	controls.cancel = new("ButtonControl"):ButtonControl(nil, {45, 100, 80, 20}, "Cancel", function()
+		main:ClosePopup()
+	end)
+	main:OpenPopup(660, 130, "Import Atlas Trees from Account", controls, "import", nil, "cancel")
+	loadLeagues()
 end
 
 function AtlasTabClass:OpenExportPopup()
