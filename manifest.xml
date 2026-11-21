@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <PoBVersion>
-	<Version number="2.68.1-atlas.aaa0757b" />
+	<Version number="2.68.1-atlas.207ab7fd" />
 	<Source part="default" url="https://raw.githubusercontent.com/redbeat1984/pob-atlas/{branch}/" />
 	<Source part="runtime" platform="win32" url="https://raw.githubusercontent.com/redbeat1984/pob-atlas/{branch}/runtime/" />
 	<Source part="program" url="https://raw.githubusercontent.com/redbeat1984/pob-atlas/{branch}/src/" />
@@ -124,7 +124,7 @@
 	<File name="Classes/AtlasFillListControl.lua" part="program" sha1="a77cef5b71ad3607976eddeb7fe2dd90dbdb9131" />
 	<File name="Classes/AtlasLoadoutListControl.lua" part="program" sha1="e498c92d2334a88b890da412103628dcf8194d14" />
 	<File name="Classes/AtlasSpec.lua" part="program" sha1="11fa605ba626467737c25b627171e160420ff1ad" />
-	<File name="Classes/AtlasTab.lua" part="program" sha1="5c4b25f4c890511d3abdc90a932d34c1b6cb4fd2" />
+	<File name="Classes/AtlasTab.lua" part="program" sha1="0fc9b8f56a4dfa9091e5d47fc3859683c8184ae4" />
 	<File name="Classes/AtlasTree.lua" part="program" sha1="cff2dc133b3e4aa8bde4b7280976a80540ebfafd" />
 	<File name="Classes/AtlasTreeView.lua" part="program" sha1="d601b36324fbdf41d34ed40c85206bfda7ebb211" />
 	<File name="Classes/BuildListControl.lua" part="program" sha1="f60f0d7f6aecbe851db896913cd1aa707c7fb304" />
@@ -150,7 +150,7 @@
 	<File name="Classes/FolderListControl.lua" part="program" sha1="2fec0874200a71563536324cfb1ea8f75984e53d" />
 	<File name="Classes/GemSelectControl.lua" part="program" sha1="8954e020052121d13122873b578b87e0bb7c60fc" />
 	<File name="Classes/GemTooltip.lua" part="program" sha1="aa0ce7d2eb619fc6b6e55aec9767320bee187343" />
-	<File name="Classes/ImportTab.lua" part="program" sha1="dfce9256337d581fe45d684faf50352b05ec622e" />
+	<File name="Classes/ImportTab.lua" part="program" sha1="787c4c7e67e1690156a806eda432bc4ffb7c4bc0" />
 	<File name="Classes/Item.lua" part="program" sha1="9ec02b4b1dbcbf38d7e0253c754062a63060677e" />
 	<File name="Classes/ItemDBControl.lua" part="program" sha1="9d8611dea39ab3ad05acd72d8d35c483aa9cf8cf" />
 	<File name="Classes/ItemListControl.lua" part="program" sha1="01546a91c647cb978ffb757cbe75a7afaa2d0cba" />
@@ -174,7 +174,7 @@
 	<File name="Classes/PassiveTreeView.lua" part="program" sha1="174f9a063a76863bc060e877e2409c051a244da3" />
 	<File name="Classes/PathControl.lua" part="program" sha1="868c38fd9095317b6721f6932cf06590bd616f13" />
 	<File name="Classes/PoBArchivesProvider.lua" part="program" sha1="acf68b7718782ce267df01614b497af246389ca5" />
-	<File name="Classes/PoEAPI.lua" part="program" sha1="7c36aec9aac7156dbc8330bc992142f607680618" />
+	<File name="Classes/PoEAPI.lua" part="program" sha1="028364e45fc1cab77af1951bc0ac861e2c7b4da8" />
 	<File name="Classes/PopupDialog.lua" part="program" sha1="2475f96e243a38dd3418dfb233207b5ed58c291a" />
 	<File name="Classes/PowerReportListControl.lua" part="program" sha1="47802eb02de22fcb7e4e6837c9dbaeda85d3d274" />
 	<File name="Classes/RectangleOutlineControl.lua" part="program" sha1="c87605ee59b8ff258a12c58ba4d4d32e67023ede" />
