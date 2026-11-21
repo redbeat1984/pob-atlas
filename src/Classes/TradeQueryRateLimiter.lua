@@ -56,7 +56,9 @@ function TradeQueryRateLimiterClass:TradeQueryRateLimiter()
 		["trade-search-request-limit"] = {},
 		["trade-fetch-request-limit"] = {},
 		["character-list-request-limit"] = {},
-		["character-request-limit"] = {}
+		["character-request-limit"] = {},
+		["account-league-request-limit"] = {},
+		["league-account-request-limit"] = {}
 	}
 	return self
 end
@@ -128,7 +130,7 @@ function TradeQueryRateLimiterClass:UpdateFromHeader(headerString, policy)
 		if self.limitMargin > 0 then
 			newPolicies = self:ReduceLimits(self.limitMargin, newPolicies)
 		end
-		if self.policies[policyKey] == nil or #self.pendingRequests[policyKey] == 0 then
+		if self.policies[policyKey] == nil or #(self.pendingRequests[policyKey] or {}) == 0 then
 			self.policies[policyKey] = policyValue
 		else
 			for rule, ruleValue in pairs(policyValue) do
@@ -225,6 +227,7 @@ function TradeQueryRateLimiterClass:InsertRequest(policy, timestamp, time)
 	end
 	local requestId = self.requestId
 	self.requestId = self.requestId + 1
+	self.pendingRequests[policy] = self.pendingRequests[policy] or {}
 	table.insert(self.pendingRequests[policy], requestId)
 	return requestId 
 end

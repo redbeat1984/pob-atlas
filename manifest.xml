@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <PoBVersion>
-	<Version number="2.68.1-atlas.207ab7fd" />
+	<Version number="2.68.1-atlas.0b5040e2" />
 	<Source part="default" url="https://raw.githubusercontent.com/redbeat1984/pob-atlas/{branch}/" />
 	<Source part="runtime" platform="win32" url="https://raw.githubusercontent.com/redbeat1984/pob-atlas/{branch}/runtime/" />
 	<Source part="program" url="https://raw.githubusercontent.com/redbeat1984/pob-atlas/{branch}/src/" />
@@ -196,7 +196,7 @@
 	<File name="Classes/TradeHelpers.lua" part="program" sha1="981b58d794cad03f595bdd64e57274fa008bf45d" />
 	<File name="Classes/TradeQuery.lua" part="program" sha1="e36064670a7ee1cca228d32ae9266fa7a7c02ef4" />
 	<File name="Classes/TradeQueryGenerator.lua" part="program" sha1="59f48443fffa9beac3dd71c7323ef1bb778be0de" />
-	<File name="Classes/TradeQueryRateLimiter.lua" part="program" sha1="2e0853cc35292f769040c1104e7877f791a79c0c" />
+	<File name="Classes/TradeQueryRateLimiter.lua" part="program" sha1="37d9b54bd366fc036e78c732a94ba92f0488de54" />
 	<File name="Classes/TradeQueryRequests.lua" part="program" sha1="a70ccb5bbaff3a951d3280b9f73988ecc60e85ea" />
 	<File name="Classes/TradeStatWeightMultiplierListControl.lua" part="program" sha1="b83a9eb1dad0e363acb3ce0cd28bb5e43fe08ced" />
 	<File name="Classes/TreeTab.lua" part="program" sha1="18c76886a37be458582cc1a6b18236954c3be652" />
