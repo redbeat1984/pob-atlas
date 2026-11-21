@@ -258,6 +258,10 @@ local function addOAuthControls(self)
 				if data and data.character then
 					self.oauthErrCode = nil
 					self:ImportPassiveTreeAndJewels(data.character, deleteJewels)
+					if self.controls.charImportTreeAtlas.state and data.character.league then
+						self:ImportAccountAtlasTrees(realm.realmCode, data.character.league)
+						return
+					end
 				else
 					if errMsg then
 						self.oauthErrCode = "Could not import: " .. errMsg
@@ -283,6 +287,9 @@ local function addOAuthControls(self)
 	end
 	self.controls.charImportTreeClearJewels = new("CheckBoxControl"):CheckBoxControl({ "LEFT", self.controls.charImportTree, "RIGHT" },
 		{ 90, 0, 18 }, "Delete jewels:", nil, "Delete all equipped jewels when importing.", true)
+	-- pob-atlas: also read the atlas trees saved on the account for the character's league
+	self.controls.charImportTreeAtlas = new("CheckBoxControl"):CheckBoxControl({ "LEFT", self.controls.charImportTreeClearJewels, "RIGHT" },
+		{ 90, 0, 18 }, "Atlas trees:", nil, "Also import the atlas trees saved on your account for this character's league (Atlas tab).\nTrees with the same name are replaced, others are added.", false)
 	self.controls.charImportItems = new("ButtonControl"):ButtonControl({ "TOPLEFT", self.controls.charImportTree, "BOTTOMLEFT" },
 		{ 0, rowSpacing, 110, 20 }, "Items and Skills", function()
 			local realm = self.controls.accountRealm:GetSelValue()
@@ -732,6 +739,31 @@ end
 
 -- attempt to fetch the last realm's character list once per instance, if there
 -- is a last realm saved
+-- pob-atlas: read the atlas trees saved on the account for `league` and put them in the Atlas tab.
+-- A token from before the atlas scope was added is refused (401/403), so the login is reset.
+function ImportTabClass:ImportAccountAtlasTrees(realmCode, league)
+	self.oauthLoading = true
+	main.api:DownloadLeagueAccount(realmCode, league, function(body, err)
+		self.oauthLoading = false
+		if err then
+			if err:match("401") or err:match("403") then
+				main.api:ResetDetails()
+				self.oauthErrCode = "Atlas trees not imported: authorize again to allow reading atlas trees."
+			else
+				self.oauthErrCode = "Could not import atlas trees: " .. err
+			end
+			return
+		end
+		local trees = body and body.league_account and body.league_account.atlas_passive_trees or { }
+		if #trees == 0 then
+			self.oauthErrCode = "No atlas trees saved in " .. league .. "."
+			return
+		end
+		self.build.atlasTab:AddAccountTrees(trees)
+		self.build.atlasTab.viewer.tooltip.updateParams = nil
+	end)
+end
+
 function ImportTabClass:TryFetchCharacterList()
 	if main.lastRealm and not self.autoFetchAttempted then
 		self.controls.accountRealmFetchButton:Click()
